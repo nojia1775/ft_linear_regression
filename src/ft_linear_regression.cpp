@@ -79,3 +79,28 @@ Lr::Lr(void) : _weight(0), _bias(0), _learning_rate(0.1)
 	}
 	std::cout << _weight << " " << _bias << " " << _learning_rate << std::endl;
 }
+
+float	Lr::train(const std::string& csv)
+{
+	std::ifstream file(csv);
+	if (!file)
+		throw Error("Error: can't open csv");
+	std::map<float, float> datas;
+	std::string line;
+	size_t count = 0;
+	while (std::getline(file, line))
+	{
+		if (!valid_line(line, true))
+			throw Error("Error: csv is corrupted");
+		if (count != 0)
+		{
+			size_t i = 0;
+			while (line[i] != ',')
+				i++;
+			datas[std::atof(line.c_str())] = std::atof(line.c_str() + i + 1);
+		}	
+		count++;
+	}
+	file.close();
+	return 1;
+}

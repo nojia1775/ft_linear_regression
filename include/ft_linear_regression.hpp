@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <map>
 
 class	Lr
 {
@@ -14,8 +15,8 @@ class	Lr
 				Lr(void);
 				~Lr(void) {}
 
-		float		train(const std::ifstream& file);
-		float		compute(const float& miles) const;
+		float		train(const std::string& csv);
+		float		compute(const float& miles) const { return miles * _weight + _bias; }
 
 		const float&	getWeight(void) const { return _weight; }
 		const float&	getBias(void) const { return _bias; }
