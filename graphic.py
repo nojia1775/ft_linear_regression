@@ -3,11 +3,9 @@ import pandas as pd
 
 # Lire les données
 df1 = pd.read_csv("data.csv", header=None, names=['km', 'price'])
-df2 = pd.read_csv("test.csv", header=None, names=['km', 'price'])
 
 # Tracer la première droite (ou points)
-df1.sort_values('price')
-plt.plot(df1['km'], df1['price'], color='blue', label='Droite 1')
+plt.scatter(df1['km'], df1['price'], color='blue', label='Droite 1')
 
 
 # Tracer la deuxième droite (ou points)

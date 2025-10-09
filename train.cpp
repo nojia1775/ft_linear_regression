@@ -80,8 +80,8 @@ int	main(int argc, char **argv)
 		ARNetwork arn(std::vector<size_t>({1, 1}));
 		arn.randomize_bias(0, 0);
 		arn.randomize_weights(0, 0);
-		arn.set_learning_rate(0.000001);
-		std::vector<double> loss = arn.train(PairFunction("MSE"), PairFunction("identity"), PairFunction("identity"), arn.batching(data.first, 1), arn.batching(data.second, 1), std::atoi(argv[2]));
+		arn.set_learning_rate(0.1);
+		std::vector<double> loss = arn.train(PairFunction("MSE"), PairFunction("identity"), PairFunction("identity"), arn.batching(data.first, data.first.size()), arn.batching(data.second, data.second.size()), std::atoi(argv[2]));
 		arn.get_json("network.json");
 	}
 	catch (const std::exception& e) { std::cerr << e.what() << std::endl; }
