@@ -2,3 +2,6 @@
 obj
 compute
 train
+venv
+__pycache__
+*.pyc

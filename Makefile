@@ -41,10 +41,11 @@ clean:
 fclean: clean
 	make fclean -C ARNetwork
 	rm -f $(NAME) $(NAME_TRAIN)
+	rm -rf venv
 
 re: fclean all
 
 -include $(DEPS)
 -include $(DEPS_TRAIN)
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re show

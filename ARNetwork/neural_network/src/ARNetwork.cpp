@@ -159,12 +159,9 @@ std::vector<double>	ARNetwork::train(const PairFunction& loss_functions, const P
 			for (size_t k = 0 ; k < inputs[j].size() ; k++)
 			{
 				Vector<double> prediction = feed_forward(inputs[j][k], layer_functions.get_activation_function(), output_functions.get_activation_function());
-				std::cout << outputs[j][k][0] << std::endl << std::endl;
 				loss_index += loss_functions.foo(prediction, outputs[j][k]);
 				back_propagation(dW, dZ, loss_functions, layer_functions.get_derived_activation_function(), output_functions.get_derived_activation_function(), outputs[j][k]);
-				// std::cout << "loss moyenne = " << loss << std::endl << std::endl;
 			}
-			std::cout << "loss = " << loss_index / inputs[j].size() << std::endl << std::endl;
 			losses.push_back(loss_index / inputs[j].size());
 			update_weights_bias(dW, dZ, inputs[j].size());
 		}
