@@ -149,6 +149,11 @@ std::vector<double>	ARNetwork::train(const PairFunction& loss_functions, const P
 	_output_activation = output_functions.get_activation_name();
 	valid_lists(inputs, outputs, nbr_inputs(), nbr_outputs());
 	std::vector<double> losses;
+	std::ofstream file("ai.csv");
+	if (!file)
+		throw Error("Error: couldn't open ai.csv");
+	file << "weight,bias" << std::endl;
+	file << _weights[0][0][0] << "," << _bias[0][0] << std::endl;
 	for (size_t i = 0 ; i < epochs ; i++)
 	{
 		double loss_index = 0;
@@ -164,8 +169,10 @@ std::vector<double>	ARNetwork::train(const PairFunction& loss_functions, const P
 			}
 			losses.push_back(loss_index / inputs[j].size());
 			update_weights_bias(dW, dZ, inputs[j].size());
+			file << _weights[0][0][0] << "," << _bias[0][0] << std::endl;
 		}
 	}
+	file.close();
 	return losses;
 }
 

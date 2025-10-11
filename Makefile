@@ -41,7 +41,6 @@ clean:
 fclean: clean
 	make fclean -C ARNetwork
 	rm -f $(NAME) $(NAME_TRAIN)
-	rm -rf venv
 
 re: fclean all
 

@@ -5,3 +5,7 @@ train
 venv
 __pycache__
 *.pyc
+ai.csv
+*.png
+train.csv
+network.json
