@@ -72,6 +72,11 @@ int	main(int argc, char **argv)
 		std::cerr << "Error: ./train <dataset> <epochs>" << std::endl;
 		return 1;
 	}
+	if (std::atoi(argv[2]) < 0)
+	{
+		std::cerr << "Error: epoch cannot be negative";
+		return 1;
+	}
 	try
 	{
 		std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>> data = extract_data(argv[1]);

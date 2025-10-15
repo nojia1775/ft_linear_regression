@@ -2,7 +2,7 @@
 
 #include "../../linear_algebra/include/LinearAlgebra.hpp"
 #include "Json.hpp"
-#include "PairFunction.hpp"
+#include "Functions.hpp"
 #include <random>
 #include <cmath>
 #include <algorithm>

@@ -98,8 +98,6 @@ Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, double (*la
 void	ARNetwork::back_propagation(std::vector<Matrix<double>>& dW, std::vector<Matrix<double>>& dZ, const PairFunction& loss_functions, double (*d_layer_activation)(const double&), double (*d_output_activation)(const double&), const Vector<double>& y)
 {
 	Matrix<double> dA(loss_functions.derived_foo(_outputs, y));
-	// dA.display();
-	// double loss = dA.sumLines()[0][0] / dA.getNbrLines();
 	for (int l = nbr_hidden_layers() ; l >= 0 ; l--)
 	{
 		Matrix<double> z = dA.hadamard(_z[l].apply(l == (int)nbr_hidden_layers() ? d_output_activation : d_layer_activation));
@@ -108,7 +106,6 @@ void	ARNetwork::back_propagation(std::vector<Matrix<double>>& dW, std::vector<Ma
 		dW[l] = dW[l] + w;
 		dA = _weights[l].transpose() * z;
 	}
-	// return loss;
 }
 
 void	ARNetwork::update_weights_bias(const std::vector<Matrix<double>>& dW, const std::vector<Matrix<double>>& dZ, const size_t& batch)
@@ -149,14 +146,20 @@ std::vector<double>	ARNetwork::train(const PairFunction& loss_functions, const P
 	_output_activation = output_functions.get_activation_name();
 	valid_lists(inputs, outputs, nbr_inputs(), nbr_outputs());
 	std::vector<double> losses;
+	///////////////////////////////////////////////
 	std::ofstream file("ai.csv");
 	if (!file)
 		throw Error("Error: couldn't open ai.csv");
-	file << "weight,bias" << std::endl;
-	file << _weights[0][0][0] << "," << _bias[0][0] << std::endl;
+	file << "epoch,weight,bias,r2" << std::endl;
+	file << "0," << _weights[0][0][0] << "," << _bias[0][0] << ",0" << std::endl;
+	std::vector<double> preds_r2;
+	///////////////////////////////////////////////
 	for (size_t i = 0 ; i < epochs ; i++)
 	{
 		double loss_index = 0;
+		///////////////////////////////////////////////
+		double average_real_output = 0;
+		///////////////////////////////////////////////
 		for (size_t j = 0 ; j < inputs.size() ; j++)
 		{
 			std::vector<Matrix<double>> dW(nbr_hidden_layers() + 1);
@@ -166,10 +169,22 @@ std::vector<double>	ARNetwork::train(const PairFunction& loss_functions, const P
 				Vector<double> prediction = feed_forward(inputs[j][k], layer_functions.get_activation_function(), output_functions.get_activation_function());
 				loss_index += loss_functions.foo(prediction, outputs[j][k]);
 				back_propagation(dW, dZ, loss_functions, layer_functions.get_derived_activation_function(), output_functions.get_derived_activation_function(), outputs[j][k]);
+				///////////////////////////////////////////////
+				for (const auto& output : outputs[j][k])
+					average_real_output += output;
+				preds_r2.push_back(prediction[0]);
+				///////////////////////////////////////////////
 			}
+			///////////////////////////////////////////////
+			average_real_output /= outputs[j].size();
+			double denom = 0;
+			for (const auto& pred : outputs[j])
+				for (const auto& output : pred)
+					denom += pow(output - average_real_output, 2);
+			file << i + 1 << "," << _weights[0][0][0] << "," << _bias[0][0] << "," << 1 - loss_index / denom << std::endl;
+			///////////////////////////////////////////////
 			losses.push_back(loss_index / inputs[j].size());
 			update_weights_bias(dW, dZ, inputs[j].size());
-			file << _weights[0][0][0] << "," << _bias[0][0] << std::endl;
 		}
 	}
 	file.close();
