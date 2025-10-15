@@ -69,8 +69,10 @@ void	ARNetwork::set_bias(const size_t& i, const size_t& j, const double& bias)
 	_bias[i][j] = bias;
 }
 
-Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, double (*layer_activation)(const double&), double (*output_activation)(const double&))
+Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, const std::string& layer_name, const std::string& output_name)
 {
+	auto layer_activation = ActivationFactory::create(layer_name);
+	auto output_activation = ActivationFactory::create(output_name);
 	set_inputs(inputs);
 	Matrix<double> neurals = _inputs;
 	_a[0] = _inputs;
@@ -81,7 +83,12 @@ Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, double (*la
 		if (i == nbr_hidden_layers())
 		{
 			if (output_activation)
-				neurals = neurals.apply(output_activation);
+			{
+				if (output_activation->name() == "softmax")
+					neurals = neurals.apply([&output_activation](const Vector<double>& x){ return output_activation->activate(x); });
+				else
+					neurals = neurals.apply([&output_activation](const double& x){ return output_activation->activate(x); })
+			}
 		}
 		else
 		{
@@ -135,15 +142,15 @@ static void	valid_lists(const std::vector<std::vector<std::vector<double>>>& inp
 	}
 }
 
-std::vector<double>	ARNetwork::train(const PairFunction& loss_functions, const PairFunction& layer_functions, const PairFunction& output_functions, const std::vector<std::vector<std::vector<double>>>& inputs, const std::vector<std::vector<std::vector<double>>>& outputs, const size_t& epochs)
+std::vector<double>	ARNetwork::train(const std::string& loss_functions, const std::string& layer_functions, const std::string& output_functions, const std::vector<std::vector<std::vector<double>>>& inputs, const std::vector<std::vector<std::vector<double>>>& outputs, const size_t& epochs)
 {
 	if (inputs.empty())
 		throw Error("Error: there is no input");
 	if (outputs.empty())
 		throw Error("Error: there is no expected output");
-	_loss = loss_functions.get_loss_name();
-	_hidden_activation = layer_functions.get_activation_name();
-	_output_activation = output_functions.get_activation_name();
+	_loss = loss_functions;
+	_hidden_activation = layer_functions;
+	_output_activation = output_functions;
 	valid_lists(inputs, outputs, nbr_inputs(), nbr_outputs());
 	std::vector<double> losses;
 	///////////////////////////////////////////////
