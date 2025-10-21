@@ -58,9 +58,9 @@ class	ARNetwork
 		void					set_bias(const size_t& i, const size_t& j, const double& bias);
 		void					set_learning_rate(const double& learning_rate) { _learning_rate = learning_rate; }
 
-		Vector<double>				feed_forward(const Vector<double>& inputs, double (*layer_activation)(const double&), double (*output_activation)(const double&));
-		void					back_propagation(std::vector<Matrix<double>>& dW, std::vector<Matrix<double>>& dZ, const PairFunction& loss_functions, double (*d_layer_activation)(const double&), double (*d_output_activation)(const double&), const Vector<double>& y);
-		std::vector<double>			train(std::unique_ptr<ILoss> loss_functions, std::unique_ptr<IActivation> layer_functions, std::unique_ptr<IActivation> output_functions, const batch_type& inputs, const batch_type& outputs, const size_t& epochs);
+		Vector<double>				feed_forward(const Vector<double>& inputs, const std::string& layer_functions, const std::string& output_functions);
+		void					back_propagation(std::vector<Matrix<double>>& dW, std::vector<Matrix<double>>& dZ, const std::string& loss_functions,const std::string& layer_functions,const std::string& output_functions, const Vector<double>& y);
+		std::vector<double>			train(const std::string& loss_functions, const std::string& layer_functions, const std::string& output_functions, const batch_type& inputs, const batch_type& outputs, const size_t& epochs);
 		void					update_weights_bias(const std::vector<Matrix<double>>& dW, const std::vector<Matrix<double>>& dZ, const size_t& batch);
 		static batch_type			batching(const std::vector<std::vector<double>>& list, const size_t& batch);
 		void					randomize_weights(const size_t& layer, const double& min, const double& max);

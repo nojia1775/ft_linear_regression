@@ -10,7 +10,7 @@ int	main(int argc, char **argv)
 	try
 	{
 		ARNetwork arn(argv[2]);
-		std::cout << arn.feed_forward({std::atof(argv[1]) / 240000}, identity, identity)[0] * 8290 << std::endl;
+		std::cout << arn.feed_forward({std::atof(argv[1]) / 240000}, "identity", "identity")[0] * 8290 << std::endl;
 	}
 	catch (const std::exception& e) { std::cerr << e.what() << std::endl; }
 	return 0;

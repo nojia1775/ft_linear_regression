@@ -1,6 +1,6 @@
 #include "../include/Functions.hpp"
 
-Vector<double>	SoftMax::activate(const Vector<double>& x) const
+Vector<double>	SoftMax::activate_vector(const Vector<double>& x) const
 {
 	Vector<double> output(x.dimension());
 	double maxVal = *std::max_element(x.getStdVector().begin(), x.getStdVector().end());
@@ -15,9 +15,9 @@ Vector<double>	SoftMax::activate(const Vector<double>& x) const
 	return output;
 }
 
-Matrix<double>	SoftMax::derive(const Vector<double>& x) const
+Matrix<double>	SoftMax::derive_vector(const Vector<double>& x) const
 {
-	Vector<double> s = activate(x);
+	Vector<double> s = activate_vector(x);
     	size_t n = s.dimension();
     	Matrix<double> jacobian(n, n);
 

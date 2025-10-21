@@ -69,10 +69,10 @@ void	ARNetwork::set_bias(const size_t& i, const size_t& j, const double& bias)
 	_bias[i][j] = bias;
 }
 
-Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, const std::string& layer_name, const std::string& output_name)
+Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, const std::string& layer_functions, const std::string& output_functions)
 {
-	auto layer_activation = ActivationFactory::create(layer_name);
-	auto output_activation = ActivationFactory::create(output_name);
+	auto output_activation = ActivationFactory::create(output_functions);
+	auto layer_activation = ActivationFactory::create(layer_functions);
 	set_inputs(inputs);
 	Matrix<double> neurals = _inputs;
 	_a[0] = _inputs;
@@ -80,20 +80,22 @@ Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, const std::
 	{
 		_z[i] = _weights[i] * neurals + Matrix<double>(_bias[i]);
 		neurals = _z[i];
-		if (i == nbr_hidden_layers())
+		try
 		{
-			if (output_activation)
-			{
-				if (output_activation->name() == "softmax")
-					neurals = neurals.apply([&output_activation](const Vector<double>& x){ return output_activation->activate(x); });
-				else
-					neurals = neurals.apply([&output_activation](const double& x){ return output_activation->activate(x); })
-			}
+			if (i == nbr_hidden_layers())
+				neurals = output_activation->activate_vector(neurals);
+			else
+				neurals = layer_activation->activate_vector(neurals);
 		}
-		else
+		catch (...)
 		{
-			if (layer_activation)
-				neurals = neurals.apply(layer_activation);
+			for (size_t j = 0 ; j < neurals.getNbrLines() ; j++)
+			{
+				if (i == 0)
+					neurals[j][0] = output_activation->activate_scalar(neurals[j][0]);
+				else
+					neurals[j][0] = layer_activation->activate_scalar(neurals[j][0]);
+			}
 		}
 		if (i != nbr_hidden_layers())
 			_a[i + 1] = neurals;
@@ -102,12 +104,33 @@ Vector<double>	ARNetwork::feed_forward(const Vector<double>& inputs, const std::
 	return _outputs;
 }
 
-void	ARNetwork::back_propagation(std::vector<Matrix<double>>& dW, std::vector<Matrix<double>>& dZ, const PairFunction& loss_functions, double (*d_layer_activation)(const double&), double (*d_output_activation)(const double&), const Vector<double>& y)
+void	ARNetwork::back_propagation(std::vector<Matrix<double>>& dW, std::vector<Matrix<double>>& dZ, const std::string& loss_functions, const std::string& layer_functions, const std::string& output_functions, const Vector<double>& y)
 {
-	Matrix<double> dA(loss_functions.derived_foo(_outputs, y));
+	auto output_activation = ActivationFactory::create(output_functions);
+	auto layer_activation = ActivationFactory::create(layer_functions);
+	auto loss_activation = LossFactory::create(loss_functions);
+	Matrix<double> dA(loss_activation->derive(_outputs, y));
 	for (int l = nbr_hidden_layers() ; l >= 0 ; l--)
 	{
-		Matrix<double> z = dA.hadamard(_z[l].apply(l == (int)nbr_hidden_layers() ? d_output_activation : d_layer_activation));
+		Vector<double> tmp(_z[l].dimension());
+		try
+		{
+			if (l == (int)nbr_hidden_layers())
+				tmp = output_activation->derive_vector(tmp);
+			else
+				tmp = layer_activation->derive_vector(tmp);
+		}
+		catch (...)
+		{
+			for (size_t i = 0 ; i < tmp.dimension() ; i++)
+			{
+				if (l == (int)nbr_hidden_layers())
+					tmp[i] = output_activation->derive_scalar(tmp[i]);
+				else
+					tmp[i] = layer_activation->derive_scalar(tmp[i]);
+			}
+		}
+		Matrix<double> z = dA.hadamard(tmp);
 		Matrix<double> w = z * Matrix<double>(_a[l]).transpose();
 		dZ[l] = dZ[l] + z;
 		dW[l] = dW[l] + w;
@@ -148,6 +171,7 @@ std::vector<double>	ARNetwork::train(const std::string& loss_functions, const st
 		throw Error("Error: there is no input");
 	if (outputs.empty())
 		throw Error("Error: there is no expected output");
+	auto loss_activation = LossFactory::create(loss_functions);
 	_loss = loss_functions;
 	_hidden_activation = layer_functions;
 	_output_activation = output_functions;
@@ -173,9 +197,9 @@ std::vector<double>	ARNetwork::train(const std::string& loss_functions, const st
 			std::vector<Matrix<double>> dZ(nbr_hidden_layers() + 1);
 			for (size_t k = 0 ; k < inputs[j].size() ; k++)
 			{
-				Vector<double> prediction = feed_forward(inputs[j][k], layer_functions.get_activation_function(), output_functions.get_activation_function());
-				loss_index += loss_functions.foo(prediction, outputs[j][k]);
-				back_propagation(dW, dZ, loss_functions, layer_functions.get_derived_activation_function(), output_functions.get_derived_activation_function(), outputs[j][k]);
+				Vector<double> prediction = feed_forward(inputs[j][k], layer_functions, output_functions);
+				loss_index += loss_activation->activate(prediction, outputs[j][k]);
+				back_propagation(dW, dZ, loss_functions, layer_functions, output_functions, outputs[j][k]);
 				///////////////////////////////////////////////
 				for (const auto& output : outputs[j][k])
 					average_real_output += output;

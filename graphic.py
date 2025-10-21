@@ -1,14 +1,14 @@
 import matplotlib.pyplot as plt
-import pandas as pd
+import pandas as panda
 
 def get_data(file, x, y):
 	try:
-		df = pd.read_csv(file)
+		df = panda.read_csv(file)
 	except FileNotFoundError:
 		print(f"Error: {file} not found")
 		exit(1)
-	df[x] = pd.to_numeric(df[x], errors='coerce')
-	df[y] = pd.to_numeric(df[y], errors='coerce')
+	df[x] = panda.to_numeric(df[x], errors='coerce')
+	df[y] = panda.to_numeric(df[y], errors='coerce')
 	df = df.dropna(subset=[x, y])
 	df = df.sort_values(by=x)
 	return df
@@ -36,26 +36,22 @@ def draw_ai(ax, dataset):
 	ax.set_ylim(-15, 1)
 	ax.grid(True)
 
-# Chargement des données
 dataset_price = get_data("data.csv", 'km', 'price')
 dataset_ai = get_data("ai.csv", 'epoch', 'r2')
 
-# Création du dossier d'images
 nbr_file = 1
 num_epochs = len(dataset_ai)
 
 for i in range(0, num_epochs, max(1, num_epochs // 10)):
 	fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
-	# Sous-graphique 1 : points + droite
 	draw_dataset(axes[0], dataset_price)
 	weight = dataset_ai.loc[i, 'weight']
 	bias = dataset_ai.loc[i, 'bias']
 	y_pred = function(dataset_price['km'], weight, bias, dataset_price['km'].max(), dataset_price['price'].max())
 	axes[0].plot(dataset_price['km'], y_pred, color='red')
 
-	# Sous-graphique 2 : évolution du R²
-	draw_ai(axes[1], dataset_ai.iloc[:i+1])  # jusqu’à l’époque i
+	draw_ai(axes[1], dataset_ai.iloc[:i+1])
 
 	plt.tight_layout()
 	plt.savefig(f"graph_{nbr_file}.png")
