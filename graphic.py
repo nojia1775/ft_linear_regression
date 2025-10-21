@@ -33,7 +33,7 @@ def draw_ai(ax, dataset):
 	ax.set_xlabel("Epochs")
 	ax.set_ylabel("R squared")
 	ax.set_xlim(0, dataset['epoch'].size)
-	ax.set_ylim(-15, 1)
+	ax.set_ylim(0, 1)
 	ax.grid(True)
 
 dataset_price = get_data("data.csv", 'km', 'price')

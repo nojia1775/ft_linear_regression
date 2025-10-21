@@ -171,6 +171,25 @@ std::vector<double>	ARNetwork::train(const std::string& loss_functions, const st
 		throw Error("Error: there is no input");
 	if (outputs.empty())
 		throw Error("Error: there is no expected output");
+	double count_outputs = 0;
+	double sum_outputs = 0;
+	for (const auto& batch : outputs)
+	{
+		for (const auto& sample : batch)
+		{
+			for (const auto& coef : sample)
+			{
+				sum_outputs += coef;
+				count_outputs++;
+			}
+		}
+	}
+	double mean_output = sum_outputs / count_outputs;
+	double sstot = 0;
+	for (const auto& batch : outputs)
+		for (const auto& sample : batch)
+			for (const auto& coef : sample)
+				sstot += pow(coef - mean_output, 2);
 	auto loss_activation = LossFactory::create(loss_functions);
 	_loss = loss_functions;
 	_hidden_activation = layer_functions;
@@ -183,14 +202,11 @@ std::vector<double>	ARNetwork::train(const std::string& loss_functions, const st
 		throw Error("Error: couldn't open ai.csv");
 	file << "epoch,weight,bias,r2" << std::endl;
 	file << "0," << _weights[0][0][0] << "," << _bias[0][0] << ",0" << std::endl;
-	std::vector<double> preds_r2;
 	///////////////////////////////////////////////
+	double ssres = 0;
 	for (size_t i = 0 ; i < epochs ; i++)
 	{
 		double loss_index = 0;
-		///////////////////////////////////////////////
-		double average_real_output = 0;
-		///////////////////////////////////////////////
 		for (size_t j = 0 ; j < inputs.size() ; j++)
 		{
 			std::vector<Matrix<double>> dW(nbr_hidden_layers() + 1);
@@ -199,24 +215,18 @@ std::vector<double>	ARNetwork::train(const std::string& loss_functions, const st
 			{
 				Vector<double> prediction = feed_forward(inputs[j][k], layer_functions, output_functions);
 				loss_index += loss_activation->activate(prediction, outputs[j][k]);
+				for (size_t l = 0 ; l < prediction.dimension() ; l++)
+					ssres += pow(prediction[l] - outputs[j][k][l], 2);
 				back_propagation(dW, dZ, loss_functions, layer_functions, output_functions, outputs[j][k]);
-				///////////////////////////////////////////////
-				for (const auto& output : outputs[j][k])
-					average_real_output += output;
-				preds_r2.push_back(prediction[0]);
-				///////////////////////////////////////////////
 			}
-			///////////////////////////////////////////////
-			average_real_output /= outputs[j].size();
-			double denom = 0;
-			for (const auto& pred : outputs[j])
-				for (const auto& output : pred)
-					denom += pow(output - average_real_output, 2);
-			file << i + 1 << "," << _weights[0][0][0] << "," << _bias[0][0] << "," << 1 - loss_index / denom << std::endl;
-			///////////////////////////////////////////////
 			losses.push_back(loss_index / inputs[j].size());
 			update_weights_bias(dW, dZ, inputs[j].size());
 		}
+		double r2 = 1.0 - ssres / sstot;
+		///////////////////////////////////////////////
+		file << i + 1 << "," << _weights[0][0][0] << "," << _bias[0][0] << "," << r2 << std::endl;
+		///////////////////////////////////////////////
+		ssres = 0;
 	}
 	file.close();
 	return losses;
