@@ -204,30 +204,38 @@ std::map<std::string, std::vector<double>>	ARNetwork::train(const std::string& l
 	file << "0," << _weights[0][0][0] << "," << _bias[0][0] << ",0" << std::endl;
 	///////////////////////////////////////////////
 	double ssres = 0;
-	for (size_t i = 0 ; i < epochs ; i++)
+	try
 	{
-		double loss_index = 0;
-		for (size_t j = 0 ; j < inputs.size() ; j++)
+		for (size_t i = 0 ; i < epochs ; i++)
 		{
-			std::vector<Matrix<double>> dW(nbr_hidden_layers() + 1);
-			std::vector<Matrix<double>> dZ(nbr_hidden_layers() + 1);
-			for (size_t k = 0 ; k < inputs[j].size() ; k++)
+			double loss_index = 0;
+			for (size_t j = 0 ; j < inputs.size() ; j++)
 			{
-				Vector<double> prediction = feed_forward(inputs[j][k], layer_functions, output_functions);
-				loss_index += loss_activation->activate(prediction, outputs[j][k]);
-				for (size_t l = 0 ; l < prediction.dimension() ; l++)
-					ssres += pow(prediction[l] - outputs[j][k][l], 2);
-				back_propagation(dW, dZ, loss_functions, layer_functions, output_functions, outputs[j][k]);
+				std::vector<Matrix<double>> dW(nbr_hidden_layers() + 1);
+				std::vector<Matrix<double>> dZ(nbr_hidden_layers() + 1);
+				for (size_t k = 0 ; k < inputs[j].size() ; k++)
+				{
+					Vector<double> prediction = feed_forward(inputs[j][k], layer_functions, output_functions);
+					loss_index += loss_activation->activate(prediction, outputs[j][k]);
+					for (size_t l = 0 ; l < prediction.dimension() ; l++)
+						ssres += pow(prediction[l] - outputs[j][k][l], 2);
+					back_propagation(dW, dZ, loss_functions, layer_functions, output_functions, outputs[j][k]);
+				}
+				track_training["loss"].push_back(loss_index / inputs[j].size());
+				update_weights_bias(dW, dZ, inputs[j].size());
 			}
-			track_training["loss"].push_back(loss_index / inputs[j].size());
-			update_weights_bias(dW, dZ, inputs[j].size());
+			double r2 = 1.0 - ssres / sstot;
+			track_training["r2"].push_back(r2);
+			///////////////////////////////////////////////
+			file << i + 1 << "," << _weights[0][0][0] << "," << _bias[0][0] << "," << r2 << std::endl;
+			///////////////////////////////////////////////
+			ssres = 0;
 		}
-		double r2 = 1.0 - ssres / sstot;
-		track_training["r2"].push_back(r2);
-		///////////////////////////////////////////////
-		file << i + 1 << "," << _weights[0][0][0] << "," << _bias[0][0] << "," << r2 << std::endl;
-		///////////////////////////////////////////////
-		ssres = 0;
+	}
+	catch (const std::exception& e)
+	{
+		file.close();
+		throw e;
 	}
 	file.close();
 	return track_training;
@@ -238,7 +246,8 @@ std::vector<std::vector<std::vector<double>>>	ARNetwork::batching(const std::vec
 	if (batch == 0)
 		throw Error("Error: batch cannot be 0");
 	size_t groups = batch > list.size() ? 1 : (size_t)(list.size() / batch);
-	groups += list.size() % batch == 0 ? 0 : 1;
+	if (batch < list.size())
+		groups += list.size() % batch == 0 ? 0 : 1;
 	std::vector<std::vector<std::vector<double>>> result(groups);
 	size_t index = 0;
 	for (size_t i = 0 ; i < list.size() ; i++)
