@@ -165,7 +165,7 @@ static void	valid_lists(const std::vector<std::vector<std::vector<double>>>& inp
 	}
 }
 
-std::vector<double>	ARNetwork::train(const std::string& loss_functions, const std::string& layer_functions, const std::string& output_functions, const std::vector<std::vector<std::vector<double>>>& inputs, const std::vector<std::vector<std::vector<double>>>& outputs, const size_t& epochs)
+std::map<std::string, std::vector<double>>	ARNetwork::train(const std::string& loss_functions, const std::string& layer_functions, const std::string& output_functions, const std::vector<std::vector<std::vector<double>>>& inputs, const std::vector<std::vector<std::vector<double>>>& outputs, const size_t& epochs)
 {
 	if (inputs.empty())
 		throw Error("Error: there is no input");
@@ -195,7 +195,7 @@ std::vector<double>	ARNetwork::train(const std::string& loss_functions, const st
 	_hidden_activation = layer_functions;
 	_output_activation = output_functions;
 	valid_lists(inputs, outputs, nbr_inputs(), nbr_outputs());
-	std::vector<double> losses;
+	std::map<std::string, std::vector<double>> track_training;
 	///////////////////////////////////////////////
 	std::ofstream file("ai.csv");
 	if (!file)
@@ -219,17 +219,18 @@ std::vector<double>	ARNetwork::train(const std::string& loss_functions, const st
 					ssres += pow(prediction[l] - outputs[j][k][l], 2);
 				back_propagation(dW, dZ, loss_functions, layer_functions, output_functions, outputs[j][k]);
 			}
-			losses.push_back(loss_index / inputs[j].size());
+			track_training["loss"].push_back(loss_index / inputs[j].size());
 			update_weights_bias(dW, dZ, inputs[j].size());
 		}
 		double r2 = 1.0 - ssres / sstot;
+		track_training["r2"].push_back(r2);
 		///////////////////////////////////////////////
 		file << i + 1 << "," << _weights[0][0][0] << "," << _bias[0][0] << "," << r2 << std::endl;
 		///////////////////////////////////////////////
 		ssres = 0;
 	}
 	file.close();
-	return losses;
+	return track_training;
 }
 
 std::vector<std::vector<std::vector<double>>>	ARNetwork::batching(const std::vector<std::vector<double>>& list, const size_t& batch)
