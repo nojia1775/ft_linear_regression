@@ -240,31 +240,50 @@ std::map<std::string, std::vector<double>>	ARNetwork::train(const std::string& l
 	_output_activation = output_functions;
 	valid_lists(inputs, outputs, nbr_inputs(), nbr_outputs());
 	std::map<std::string, std::vector<double>> track_training;
+	///////////////////////////////////////////////
+	std::ofstream file("ai.csv");
+	if (!file)
+		throw Error("Error: couldn't open ai.csv");
+	file << "epoch,weight,bias,r2" << std::endl;
+	file << "0," << _weights[0][0][0] << "," << _bias[0][0] << ",0" << std::endl;
+	///////////////////////////////////////////////
 	double ssres = 0;
-	for (size_t i = 0 ; i < epochs ; i++)
+	try
 	{
-		double loss_index = 0;
-		for (size_t j = 0 ; j < inputs.size() ; j++)
+		for (size_t i = 0 ; i < epochs ; i++)
 		{
-			std::vector<Matrix<double>> dW(nbr_hidden_layers() + 1);
-			std::vector<Matrix<double>> dZ(nbr_hidden_layers() + 1);
-			for (size_t k = 0 ; k < inputs[j].size() ; k++)
+			double loss_index = 0;
+			for (size_t j = 0 ; j < inputs.size() ; j++)
 			{
-				Vector<double> prediction = feed_forward(inputs[j][k], layer_functions, output_functions);
-				loss_index += loss_activation->activate(prediction, outputs[j][k]);
-				for (size_t l = 0 ; l < prediction.dimension() ; l++)
-					ssres += pow(prediction[l] - outputs[j][k][l], 2);
-				back_propagation(dW, dZ, loss_functions, layer_functions, output_functions, outputs[j][k]);
+				std::vector<Matrix<double>> dW(nbr_hidden_layers() + 1);
+				std::vector<Matrix<double>> dZ(nbr_hidden_layers() + 1);
+				for (size_t k = 0 ; k < inputs[j].size() ; k++)
+				{
+					Vector<double> prediction = feed_forward(inputs[j][k], layer_functions, output_functions);
+					loss_index += loss_activation->activate(prediction, outputs[j][k]);
+					for (size_t l = 0 ; l < prediction.dimension() ; l++)
+						ssres += pow(prediction[l] - outputs[j][k][l], 2);
+					back_propagation(dW, dZ, loss_functions, layer_functions, output_functions, outputs[j][k]);
+				}
+				track_training["loss"].push_back(loss_index / inputs[j].size());
+				update_weights_bias(dW, dZ, inputs[j].size());
 			}
-			track_training["loss"].push_back(loss_index / inputs[j].size());
-			update_weights_bias(dW, dZ, inputs[j].size());
+			double r2 = 1.0 - ssres / sstot;
+			track_training["r2"].push_back(r2);
+			///////////////////////////////////////////////
+			file << i + 1 << "," << _weights[0][0][0] << "," << _bias[0][0] << "," << r2 << std::endl;
+			///////////////////////////////////////////////
+			ssres = 0;
 		}
-		double r2 = 1.0 - ssres / sstot;
-		track_training["r2"].push_back(r2);
-		ssres = 0;
 	}
+	catch (const std::exception& e)
+	{
+		file.close();
+		throw e;
+	}
+	file.close();
 	return track_training;
-}
+}	
 
 /**
  * @brief transform a list of inputs into a list of group of @param batch numbers
